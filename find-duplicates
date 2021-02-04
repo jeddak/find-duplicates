@@ -5,32 +5,31 @@
 # using checksums
 # and write the results to the results file
 
-A_DIR=$1
-B_DIR=$2
-RESULTS=$3
+A_DIR=${1}
+B_DIR=${2}
+RESULTS=${3}
 
 A_CKSUM_FILE=/tmp/a_checksums.txt
 B_CKSUM_FILE=/tmp/b_checksums.txt
-TMP_RESULTS=/tmp/find_duplicates_results.txt
 
 function setUpTempFile() {
-    DIR=$1
-    rm $DIR
-    touch $DIR
+    DIR=${1}
+    rm ${DIR}
+    touch ${DIR}
 }
 
 function captureChecksums() {
-    DIR=$1
-    CKSUM_FILE=$2
+    DIR=${1}
+    CKSUM_FILE=${2}
     find ${DIR} -type f | while read f; do
         checksum=`cksum $f | awk -F' ' '{print $1}'` 
-        echo "$checksum,\"$f\"" >> ${CKSUM_FILE}
+        echo "${checksum},\"$f\"" >> ${CKSUM_FILE}
     done
 }
 
 function compareFileSets() {
-    A_CKSUMS=$1
-    B_CKSUMS=$2
+    A_CKSUMS=${1}
+    B_CKSUMS=${2}
     
     cat ${A_CKSUMS} | while read line
     do
@@ -38,24 +37,27 @@ function compareFileSets() {
         a_filepath=`echo ${line} | awk -F',' '{print $2}'`
                 
         rslt=`grep ${checksum} ${B_CKSUMS}`
-        if [[ ${rslt} > '' ]]
-        then
-            b_filepath=`echo ${rslt} | awk -F',' '{print $2}'`
-            echo "${a_filepath} matches ${b_filepath}" >> $TMP_RESULTS   
-        fi
+
+        echo ${rslt} | while read match
+        do
+            b_filepath=`echo ${match} | awk -F',' '{print $2}'`
+            if [[ ${b_filepath} > ''  &&  ${a_filepath} != ${b_filepath} ]]
+            then
+                echo "${a_filepath} matches ${b_filepath}" >> ${RESULTS}
+            fi
+            b_filepath=""    
+        done
         checksum=""
         rslt=""
         a_filepath=""
-        b_filepath=""    
     done
 }
 
-rm $RESULTS
-touch $RESULTS
+rm ${RESULTS}
+touch ${RESULTS}
 
-setUpTempFile $A_CKSUM_FILE
-setUpTempFile $B_CKSUM_FILE
-setUpTempFile $TMP_RESULTS
+setUpTempFile ${A_CKSUM_FILE}
+setUpTempFile ${B_CKSUM_FILE}
 
 echo "capturing checksums for ${A_DIR}"
 captureChecksums ${A_DIR} ${A_CKSUM_FILE}
@@ -66,7 +68,8 @@ captureChecksums ${B_DIR} ${B_CKSUM_FILE}
 echo "checking for identical files appearing in both ${A_DIR} and ${B_DIR}"
 compareFileSets ${A_CKSUM_FILE} ${B_CKSUM_FILE}
 
-# not sure why I have to do this in the first place
-cat $TMP_RESULTS | grep "matches" > $RESULTS
-
 echo "results are in ${RESULTS}"
+
+
+
+            
