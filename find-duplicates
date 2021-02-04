@@ -27,6 +27,21 @@ function captureChecksums() {
     done
 }
 
+function checkMatches() {
+    matches=${1}
+    a_filepath=${2}
+    outfile=${3}
+    echo ${matches} | while read match
+    do
+        b_filepath=`echo ${match} | awk -F',' '{print $2}'`
+        if [[ ${b_filepath} > ''  &&  ${a_filepath} != ${b_filepath} ]]
+        then
+            echo "${a_filepath} is identical to ${b_filepath}" >> ${outfile}
+        fi
+        b_filepath=""    
+    done
+    }
+
 function compareFileSets() {
     A_CKSUMS=${1}
     B_CKSUMS=${2}
@@ -36,17 +51,8 @@ function compareFileSets() {
         checksum=`echo ${line} | awk -F',' '{print $1}'`
         a_filepath=`echo ${line} | awk -F',' '{print $2}'`
                 
-        rslt=`grep ${checksum} ${B_CKSUMS}`
-
-        echo ${rslt} | while read match
-        do
-            b_filepath=`echo ${match} | awk -F',' '{print $2}'`
-            if [[ ${b_filepath} > ''  &&  ${a_filepath} != ${b_filepath} ]]
-            then
-                echo "${a_filepath} matches ${b_filepath}" >> ${RESULTS}
-            fi
-            b_filepath=""    
-        done
+        matches=`grep ${checksum} ${B_CKSUMS}`
+        checkMatches ${matches} ${a_filepath} ${RESULTS}
         checksum=""
         rslt=""
         a_filepath=""
